@@ -12,7 +12,25 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 const run = async() => {
+    try{
+        const serviceCollection = client.db("MrChef").collection("services");
 
+        app.get('/services', async(req, res) => {
+            const limit = parseInt(req.query.limit);
+            const query = {};
+            let cursor;
+            if(limit){
+                cursor = serviceCollection.find(query).limit(limit);
+            }else{
+                cursor = serviceCollection.find(query);
+            }
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+    }
+    catch(err){
+        console.log(err);
+    }
 }
 
 run().catch(err => console.log(err))
