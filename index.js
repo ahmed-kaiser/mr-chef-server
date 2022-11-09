@@ -77,6 +77,11 @@ const run = async() => {
             const result = await reviewCollection.deleteOne(query);
             res.send(result);
         });
+
+        app.post('/add_service', async(req, res) => {
+            const result = await serviceCollection.insertOne(req.body);
+            res.send(result);
+        });
     }
     catch(err){
         console.log(err);
