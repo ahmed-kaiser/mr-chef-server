@@ -64,6 +64,19 @@ const run = async() => {
             const result = await cursor.toArray()
             res.send(result);
         });
+
+        app.put('/my-reviews', async(req, res) => {
+            const data = req.body;
+            const filter = { _id: ObjectId(req.query.id ) };
+            const result = await reviewCollection.updateOne(filter, {$set: data });
+            res.send(result);
+        });
+        
+        app.delete('/my-reviews/:id', async(req, res) => {
+            const query = { _id: ObjectId(req.params.id) };
+            const result = await reviewCollection.deleteOne(query);
+            res.send(result);
+        });
     }
     catch(err){
         console.log(err);
