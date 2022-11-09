@@ -30,13 +30,38 @@ const run = async() => {
         });
 
         app.get('/services/:id', async(req, res) => {
-            const query = { _id: ObjectId(req.params.id)};
+            let query = { _id: ObjectId(req.params.id)};
             const service = await serviceCollection.findOne(query);
             res.send(service);
         });
 
         app.post('/reviews', async(req, res) => {
             const result = await reviewCollection.insertOne(req.body);
+            res.send(result);
+        });
+
+        app.get('/reviews', async(req, res) => {
+            const query = { serviceTitle: req.query.serviceTitle };
+            const cursor = reviewCollection.find(query).sort({date:-1});
+            const reviews = await cursor.toArray();
+            res.send(reviews);
+        });
+
+        app.get('/my_reviews', async(req, res) => {
+            const cursor = reviewCollection.aggregate([
+                {
+                    $lookup:{
+                        from: 'services',
+                        localField: 'serviceTitle',
+                        foreignField: 'title',
+                        as: 'service'
+                    }
+                },
+                {
+                    "$match":{userEmail: req.query.email}
+                }
+            ])
+            const result = await cursor.toArray()
             res.send(result);
         });
     }
