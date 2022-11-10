@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
@@ -10,6 +11,23 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.fixmo2v.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+const verifyToken = (req, res, next) => {
+    const header = req.headers.authorization;
+    if(!header) {
+        res.status(401).send({message: 'Unauthorized access'});
+    }else{
+        const token = header.split(' ')[1];
+        jwt.verify(token, process.env.SIGNATURE, (err, decoded) => {
+            if(err) {
+                res.status(401).send({message: 'Unauthorized access'});
+            }else{
+                req.decoded = decoded;
+                next();
+            }
+        });
+    }
+};
 
 const run = async() => {
     try{
@@ -47,7 +65,10 @@ const run = async() => {
             res.send(reviews);
         });
 
-        app.get('/my_reviews', async(req, res) => {
+        app.get('/my_reviews', verifyToken, async(req, res) => {
+            if(req.decoded.email !== req.query.email ) {
+                res.status(401).send({message: 'Unauthorized access'});
+            }
             const cursor = reviewCollection.aggregate([
                 {
                     $lookup:{
@@ -88,7 +109,13 @@ const run = async() => {
     }
 }
 
-run().catch(err => console.log(err))
+run().catch(err => console.log(err));
+
+app.post('/verify', (req, res) => {
+    const user = req.body;
+    const token = jwt.sign(user, process.env.SIGNATURE, { expiresIn: '1h' });
+    res.send({token});
+});
 
 app.get('/', (req, res) => {
     res.send("Mr. Chef server running")
